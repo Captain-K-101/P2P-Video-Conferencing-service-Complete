@@ -11,7 +11,7 @@ const io = require("socket.io")(server, {
 
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 
 app.get('/', (req, res) => {
 	res.send('Running');
@@ -31,6 +31,12 @@ io.on("connection", (socket) => {
 	socket.on("answerCall", (data) => {
 		io.to(data.to).emit("callAccepted", data.signal)
 	});
+
+	socket.on("newChatMessage", (data) => {
+		console.log(data)
+		io.to(data.to).emit("newChatMessage", data);
+	});
+
 });
 
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

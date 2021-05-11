@@ -4,8 +4,8 @@ import Peer from 'simple-peer';
 
 const SocketContext = createContext();
 
-// const socket = io('http://localhost:5000');
-const socket = io('https://networks-proj-webrtc.herokuapp.com/');
+const socket = io('http://localhost:5000');
+// const socket = io('https://networks-proj-webrtc.herokuapp.com/');
 
 const ContextProvider = ({ children }) => {
   const [callAccepted, setCallAccepted] = useState(false);
@@ -14,7 +14,8 @@ const ContextProvider = ({ children }) => {
   const [name, setName] = useState('');
   const [call, setCall] = useState({});
   const [me, setMe] = useState('');
-
+  const [room, setRoom] = useState('')
+  const [messages, setMessages] = useState([]);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -30,16 +31,30 @@ const ContextProvider = ({ children }) => {
     socket.on('me', (id) => setMe(id));
 
     socket.on('callUser', ({ from, name: callerName, signal }) => {
+      setRoom(from)
       setCall({ isReceivingCall: true, from, name: callerName, signal });
     });
+
+    socket.on("newChatMessage", (message) => {
+      const incomingMessage = {
+        ...message,
+        ownedByCurrentUser: message.senderId === socket.id,
+      };
+      setMessages((messages) => [...messages, incomingMessage]);
+    });
+
+
   }, []);
 
-  const answerCall = () => {
+
+  // logic for video chat
+  const answerCall = async () => {
     setCallAccepted(true);
 
     const peer = new Peer({ initiator: false, trickle: false, stream });
 
     peer.on('signal', (data) => {
+      console.log(room)
       socket.emit('answerCall', { signal: data, to: call.from });
     });
 
@@ -53,6 +68,9 @@ const ContextProvider = ({ children }) => {
   };
 
   const callUser = (id) => {
+
+    setRoom(id)
+
     const peer = new Peer({ initiator: true, trickle: false, stream });
 
     peer.on('signal', (data) => {
@@ -80,6 +98,21 @@ const ContextProvider = ({ children }) => {
     window.location.reload();
   };
 
+
+  // logic for text chat
+  const sendMessage = (messageBody) => {
+    socket.emit("newChatMessage", {
+      to: room,
+      body: messageBody,
+      senderId: socket.id,
+    });
+    socket.emit("newChatMessage", {
+      to: socket.id,
+      body: messageBody,
+      senderId: socket.id,
+    });
+  };
+
   return (
     <SocketContext.Provider value={{
       call,
@@ -91,9 +124,12 @@ const ContextProvider = ({ children }) => {
       setName,
       callEnded,
       me,
+      messages,
+      room,
       callUser,
       leaveCall,
       answerCall,
+      sendMessage,
     }}
     >
       {children}

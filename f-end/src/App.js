@@ -5,7 +5,7 @@ import {makeStyles} from '@material-ui/core/styles'
 import VideoPlayer from './components/VideoPlayer'
 import Options from './components/Options'
 import Notifications from './components/Notifications'
-
+import Chatbox from './components/Chat'
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -44,6 +44,7 @@ const App = () => {
             <Options>
                 <Notifications/>
             </Options>
+            <Chatbox />
         </div>
     )
 }
